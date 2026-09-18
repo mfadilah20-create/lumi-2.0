@@ -1,0 +1,7 @@
+{
+  "name": "LUMI",
+  "description": "Aplikasi pembelajaran awal membaca yang ceria dan ramah untuk anak usia 4–6 tahun di Hutan Teman LUMI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
