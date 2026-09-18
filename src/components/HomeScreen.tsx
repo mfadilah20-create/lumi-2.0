@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Volume2, VolumeX, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { ActivityScreen, ChildProfile } from '../types';
 import { soundService } from '../services/soundService';
-import { ForestAmbientLife } from './home/ForestAmbientLife';
-import { LumiIdleOverlay } from './home/LumiIdleOverlay';
-import { LumiSpeechBubble } from './home/LumiSpeechBubble';
+import { ForestBackground } from './ForestBackground';
+import { LumiCharacter } from './LumiCharacter';
+import { AudioButton } from './AudioButton';
+import { SettingsButton } from './SettingsButton';
 import { ChildGreetingPill } from './home/ChildGreetingPill';
+import { LumiSpeechBubble } from './home/LumiSpeechBubble';
+import { ActivityButton } from './home/ActivityButton';
 
 interface HomeScreenProps {
   childProfile?: ChildProfile;
@@ -23,26 +26,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 }) => {
   const [isMusicActive, setIsMusicActive] = useState(soundService.isMusicOn());
   const [lumiHeartEffect, setLumiHeartEffect] = useState(false);
+  const [lumiState, setLumiState] = useState<'idle' | 'greeting' | 'happy'>('idle');
   const [creatureToast, setCreatureToast] = useState<string | null>(null);
-  const [activeButton, setActiveButton] = useState<ActivityScreen | null>(null);
 
   const activeNickname = (childProfile?.nickname || childName || 'Izar').trim();
 
-  // Background image resolution with fallback
-  const [bgSrc, setBgSrc] = useState<string>(() => {
-    try {
-      const custom = localStorage.getItem('lumi_custom_master_image');
-      if (custom) return custom;
-    } catch {
-      // ignore
-    }
-    return '/master_home.jpg';
-  });
-
   useEffect(() => {
-    // Welcoming voice invitation
     const timer = setTimeout(() => {
       soundService.speak(`Halo, ${activeNickname}! Yuk, pilih aktivitasnya!`);
+      setLumiState('greeting');
+      setTimeout(() => setLumiState('idle'), 3000);
     }, 600);
     return () => clearTimeout(timer);
   }, [activeNickname]);
@@ -55,24 +48,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   };
 
   const handleSelect = (activity: ActivityScreen, spokenTitle: string) => {
-    if (activeButton) return;
-    setActiveButton(activity);
-
-    // Audio feedback
     soundService.playPop();
     soundService.playSparkle();
     soundService.speak(`Ayo ${spokenTitle}!`);
-
-    // 280ms interaction animation duration, then navigate smoothly
-    setTimeout(() => {
-      onSelectActivity(activity);
-    }, 280);
+    setLumiState('happy');
+    setTimeout(() => onSelectActivity(activity), 280);
   };
 
   const handleTapLumi = () => {
     soundService.playSuccess();
     setLumiHeartEffect(true);
-    setTimeout(() => setLumiHeartEffect(false), 1600);
+    setLumiState('happy');
+    setTimeout(() => {
+      setLumiHeartEffect(false);
+      setLumiState('idle');
+    }, 1600);
     const quotes = [
       `Halo ${activeNickname}! Aku Lumi, senang bisa belajar bersamamu!`,
       `Yuk pilih salah satu tombol warna-warni di bawah!`,
@@ -89,12 +79,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setTimeout(() => setCreatureToast(null), 2000);
   };
 
+  const activities: {
+    id: ActivityScreen;
+    icon: string;
+    label: string;
+    spoken: string;
+    color: 'amber' | 'purple' | 'emerald' | 'sky' | 'pink';
+  }[] = [
+    { id: 'belajar-huruf', icon: '🔤', label: 'Belajar Huruf', spoken: 'Belajar Huruf', color: 'amber' },
+    { id: 'menulis', icon: '✏️', label: 'Menulis', spoken: 'Menulis Huruf', color: 'purple' },
+    { id: 'bermain', icon: '🎮', label: 'Bermain', spoken: 'Bermain Mini Game', color: 'emerald' },
+    { id: 'membaca', icon: '📖', label: 'Membaca', spoken: 'Membaca Kata', color: 'sky' },
+    { id: 'cerita', icon: '📚', label: 'Cerita', spoken: 'Mendengarkan Cerita', color: 'pink' },
+  ];
+
   return (
-    <div
-      id="lumi-home-root"
-      className="relative w-full h-screen bg-[#9ce5ec] flex items-center justify-center overflow-hidden select-none"
-    >
-      {/* Dynamic Toast / Feedback Popups */}
+    <ForestBackground>
+      {/* Toast / Feedback Popups */}
       <AnimatePresence>
         {creatureToast && (
           <motion.div
@@ -109,330 +110,89 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         )}
       </AnimatePresence>
 
-      {/* ================================================================ */}
-      {/* MASTER HOME VIEWPORT CONTAINER (Preserves Exact 16:10 / 16:9)     */}
-      {/* ================================================================ */}
-      <div
-        id="lumi-master-stage"
-        className="relative w-full h-full flex items-center justify-center shadow-2xl"
-        style={{
-          aspectRatio: '16 / 10.2',
-          maxHeight: '100vh',
-          maxWidth: 'calc(100vh * (16 / 10.2))',
-        }}
-      >
-        {/* The Master Reference Artwork Background */}
-        <img
-          id="master-home-artwork"
-          src={bgSrc}
-          alt="LUMI Master Home Screen"
-          onError={() => {
-            if (bgSrc !== '/master_home.png') {
-              setBgSrc('/master_home.png');
-            } else {
-              setBgSrc('/master_home.jpg');
-            }
-          }}
-          className="absolute inset-0 w-full h-full object-fill pointer-events-none select-none"
-          referrerPolicy="no-referrer"
-        />
-
-        {/* ============================================================== */}
-        {/* FOREST AMBIENT LIFE LAYER (Waterfall, stream, wind, leaves...) */}
-        {/* ============================================================== */}
-        <ForestAmbientLife />
-
-        {/* ============================================================== */}
-        {/* 1. CHILD GREETING (Top-Left, Single Element, Dynamic Nickname)  */}
-        {/* ============================================================== */}
+      {/* Top Bar: Greeting (left), Audio + Settings (right) */}
+      <div className="relative z-30 flex items-start justify-between w-full px-3 sm:px-5 pt-3 sm:pt-5">
         <ChildGreetingPill
           childProfile={childProfile}
           childName={activeNickname}
         />
 
-        {/* ============================================================== */}
-        {/* 2. MUSIC AUDIO TOGGLE HOTSPOT (Top-Right near settings)        */}
-        {/* ============================================================== */}
-        <button
-          id="hotspot-audio-toggle"
-          onClick={toggleMusic}
-          style={{
-            top: '3.4%',
-            right: '9.2%',
-            width: '4.8%',
-            height: '9.8%',
-          }}
-          className="absolute z-30 rounded-full flex items-center justify-center bg-white/70 hover:bg-white/90 text-sky-600 shadow-md border-2 border-white/80 transition-transform hover:scale-110 active:scale-90 cursor-pointer backdrop-blur-xs"
-          title={isMusicActive ? 'Matikan Musik' : 'Nyalakan Musik'}
-        >
-          {isMusicActive ? (
-            <Volume2 className="w-[55%] h-[55%]" />
-          ) : (
-            <VolumeX className="w-[55%] h-[55%] text-slate-400" />
-          )}
-        </button>
-
-        {/* ============================================================== */}
-        {/* 3. SETTINGS HOTSPOT (Top-Right over gear icon)                 */}
-        {/* ============================================================== */}
-        <div
-          id="hotspot-settings"
-          style={{
-            top: '3.4%',
-            right: '2.6%',
-            width: '5.6%',
-            height: '9.8%',
-          }}
-          className="absolute z-30 rounded-full cursor-pointer transition-all hover:ring-4 hover:ring-sky-300/70 hover:scale-105 active:scale-95 flex items-center justify-center group"
-          onClick={() => {
-            soundService.playPop();
-            onOpenSettings();
-          }}
-          title="Pengaturan Orang Tua"
-        >
-          <div className="w-full h-full rounded-full bg-white/0 group-hover:bg-white/20 transition-colors" />
-        </div>
-
-        {/* ============================================================== */}
-        {/* 4. LUMI CHARACTER (Gentle idle breathing, blink, antenna, tap)  */}
-        {/* ============================================================== */}
-        <LumiIdleOverlay
-          onTap={handleTapLumi}
-          heartEffect={lumiHeartEffect}
-        />
-
-        {/* ============================================================== */}
-        {/* 5. SPEECH BUBBLE (Subtle idle float, “Yuk, pilih aktivitasnya!”)*/}
-        {/* ============================================================== */}
-        <LumiSpeechBubble />
-
-        {/* ============================================================== */}
-        {/* THE FIVE ACTIVITY BUTTON HOTSPOTS                              */}
-        {/* With 200–400ms soft press effect & subtle sparkle feedback     */}
-        {/* ============================================================== */}
-
-        {/* ROW 1 - BUTTON 1: BELAJAR HURUF (Yellow, ABC) */}
-        <motion.button
-          id="hotspot-activity-belajar-huruf"
-          animate={
-            activeButton === 'belajar-huruf'
-              ? { scale: [1, 1.06, 0.95], transition: { duration: 0.28 } }
-              : { scale: 1 }
-          }
-          style={{
-            top: '50.4%',
-            left: '19.3%',
-            width: '21.4%',
-            height: '22.0%',
-            borderRadius: 'clamp(16px, 2.8vw, 36px)',
-          }}
-          className="absolute z-30 cursor-pointer transition-colors duration-150 group border-transparent hover:ring-6 hover:ring-amber-300/70 hover:bg-white/15 active:scale-95 focus:outline-none"
-          onClick={() => handleSelect('belajar-huruf', 'Belajar Huruf')}
-          title="Belajar Huruf: Mengenal Alfabet A sampai Z"
-        >
-          <span className="sr-only">Belajar Huruf</span>
-          {activeButton === 'belajar-huruf' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="text-3xl animate-ping">✨</span>
-            </div>
-          )}
-        </motion.button>
-
-        {/* ROW 1 - BUTTON 2: MENULIS (Purple/Lavender, Pencil) */}
-        <motion.button
-          id="hotspot-activity-menulis"
-          animate={
-            activeButton === 'menulis'
-              ? { scale: [1, 1.06, 0.95], transition: { duration: 0.28 } }
-              : { scale: 1 }
-          }
-          style={{
-            top: '50.4%',
-            left: '41.2%',
-            width: '18.8%',
-            height: '22.0%',
-            borderRadius: 'clamp(16px, 2.8vw, 36px)',
-          }}
-          className="absolute z-30 cursor-pointer transition-colors duration-150 group border-transparent hover:ring-6 hover:ring-purple-300/70 hover:bg-white/15 active:scale-95 focus:outline-none"
-          onClick={() => handleSelect('menulis', 'Menulis Huruf')}
-          title="Menulis: Latihan Menulis Huruf dan Menebalkan Garis"
-        >
-          <span className="sr-only">Menulis</span>
-          {activeButton === 'menulis' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="text-3xl animate-ping">✨</span>
-            </div>
-          )}
-        </motion.button>
-
-        {/* ROW 1 - BUTTON 3: BERMAIN (Green, Game Controller) */}
-        <motion.button
-          id="hotspot-activity-bermain"
-          animate={
-            activeButton === 'bermain'
-              ? { scale: [1, 1.06, 0.95], transition: { duration: 0.28 } }
-              : { scale: 1 }
-          }
-          style={{
-            top: '50.4%',
-            left: '60.5%',
-            width: '20.0%',
-            height: '22.0%',
-            borderRadius: 'clamp(16px, 2.8vw, 36px)',
-          }}
-          className="absolute z-30 cursor-pointer transition-colors duration-150 group border-transparent hover:ring-6 hover:ring-emerald-300/70 hover:bg-white/15 active:scale-95 focus:outline-none"
-          onClick={() => handleSelect('bermain', 'Bermain Mini Game')}
-          title="Bermain: Tebak Huruf, Pasangan Kartu, & Tangkap Buah"
-        >
-          <span className="sr-only">Bermain</span>
-          {activeButton === 'bermain' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="text-3xl animate-ping">✨</span>
-            </div>
-          )}
-        </motion.button>
-
-        {/* ROW 2 - BUTTON 4: MEMBACA (Sky Blue, Open Book) */}
-        <motion.button
-          id="hotspot-activity-membaca"
-          animate={
-            activeButton === 'membaca'
-              ? { scale: [1, 1.06, 0.95], transition: { duration: 0.28 } }
-              : { scale: 1 }
-          }
-          style={{
-            top: '73.2%',
-            left: '27.6%',
-            width: '22.4%',
-            height: '20.2%',
-            borderRadius: 'clamp(16px, 2.8vw, 36px)',
-          }}
-          className="absolute z-30 cursor-pointer transition-colors duration-150 group border-transparent hover:ring-6 hover:ring-sky-300/70 hover:bg-white/15 active:scale-95 focus:outline-none"
-          onClick={() => handleSelect('membaca', 'Membaca Kata')}
-          title="Membaca: Belajar Mengeja Kata dan Fonik"
-        >
-          <span className="sr-only">Membaca</span>
-          {activeButton === 'membaca' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="text-3xl animate-ping">✨</span>
-            </div>
-          )}
-        </motion.button>
-
-        {/* ROW 2 - BUTTON 5: CERITA (Pink, Fairy Tale Book) */}
-        <motion.button
-          id="hotspot-activity-cerita"
-          animate={
-            activeButton === 'cerita'
-              ? { scale: [1, 1.06, 0.95], transition: { duration: 0.28 } }
-              : { scale: 1 }
-          }
-          style={{
-            top: '73.2%',
-            left: '50.8%',
-            width: '21.5%',
-            height: '20.2%',
-            borderRadius: 'clamp(16px, 2.8vw, 36px)',
-          }}
-          className="absolute z-30 cursor-pointer transition-colors duration-150 group border-transparent hover:ring-6 hover:ring-pink-300/70 hover:bg-white/15 active:scale-95 focus:outline-none"
-          onClick={() => handleSelect('cerita', 'Mendengarkan Cerita')}
-          title="Cerita: Petualangan Lumi di Hutan Ajaib"
-        >
-          <span className="sr-only">Cerita</span>
-          {activeButton === 'cerita' && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="text-3xl animate-ping">✨</span>
-            </div>
-          )}
-        </motion.button>
-
-        {/* ============================================================== */}
-        {/* INTERACTIVE FOREST CREATURES (Sound & Delight Easter Eggs)     */}
-        {/* ============================================================== */}
-
-        {/* Squirrel on Oak Tree */}
-        <div
-          id="creature-squirrel"
-          style={{
-            top: '14%',
-            left: '5.5%',
-            width: '7.5%',
-            height: '12%',
-          }}
-          className="absolute z-20 cursor-pointer rounded-full group"
-          onClick={() => showToast('Cip cip! Tupai kecil melompat gembira!')}
-          title="Tupai Kecil"
-        >
-          <div className="w-full h-full rounded-full transition-transform group-hover:scale-110 active:scale-95" />
-        </div>
-
-        {/* Hobbit Treehouse Door */}
-        <div
-          id="creature-treehouse-door"
-          style={{
-            top: '35%',
-            left: '2%',
-            width: '12%',
-            height: '26%',
-          }}
-          className="absolute z-20 cursor-pointer rounded-full group"
-          onClick={() => {
-            soundService.playPop();
-            showToast('Tok tok tok! Pintu rumah pohon Lumi!');
-          }}
-          title="Rumah Pohon"
-        >
-          <div className="w-full h-full rounded-full transition-transform group-hover:scale-105 active:scale-95" />
-        </div>
-
-        {/* White Bunny */}
-        <div
-          id="creature-bunny"
-          style={{
-            top: '68%',
-            left: '8.5%',
-            width: '8.5%',
-            height: '18%',
-          }}
-          className="absolute z-20 cursor-pointer rounded-full group"
-          onClick={() => showToast('Kelinci putih melompat di rumput hijau!')}
-          title="Kelinci Putih"
-        >
-          <div className="w-full h-full rounded-full transition-transform group-hover:scale-110 active:scale-95" />
-        </div>
-
-        {/* Baby Fawn / Deer */}
-        <div
-          id="creature-deer"
-          style={{
-            top: '52%',
-            left: '88%',
-            width: '11%',
-            height: '24%',
-          }}
-          className="absolute z-20 cursor-pointer rounded-full group"
-          onClick={() => showToast('Rusa kecil mengintip ramah dari balik pagar!')}
-          title="Rusa Kecil"
-        >
-          <div className="w-full h-full rounded-full transition-transform group-hover:scale-110 active:scale-95" />
-        </div>
-
-        {/* Bluebird */}
-        <div
-          id="creature-bird"
-          style={{
-            top: '16%',
-            left: '90%',
-            width: '8%',
-            height: '11%',
-          }}
-          className="absolute z-20 cursor-pointer rounded-full group"
-          onClick={() => showToast('Burung biru bernyanyi merdu!')}
-          title="Burung Biru"
-        >
-          <div className="w-full h-full rounded-full transition-transform group-hover:scale-110 active:scale-95" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <AudioButton
+            variant="circle"
+            isMuted={!isMusicActive}
+            onClick={toggleMusic}
+          />
+          <SettingsButton onOpen={onOpenSettings} />
         </div>
       </div>
-    </div>
+
+      {/* LUMI Character + Speech Bubble (center area) */}
+      <div className="relative z-20 flex-1 flex flex-col items-center justify-center w-full px-4 pt-2 sm:pt-4">
+        <div className="relative flex items-start justify-center w-full max-w-md">
+          {/* Lumi Character */}
+          <div className="relative flex flex-col items-center">
+            <LumiCharacter
+              state={lumiState}
+              size="lg"
+              onClick={handleTapLumi}
+              showShadow={true}
+            />
+            {/* Tap hearts effect */}
+            <AnimatePresence>
+              {lumiHeartEffect && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0, y: 10 }}
+                  animate={{ scale: [0, 1.25, 1], opacity: 1, y: -28 }}
+                  exit={{ scale: 1.3, opacity: 0, y: -45 }}
+                  transition={{ duration: 0.6 }}
+                  className="absolute -top-4 left-1/2 -translate-x-1/2 flex items-center gap-1 text-2xl font-black drop-shadow-md pointer-events-none z-40"
+                >
+                  <span className="animate-bounce">❤️</span>
+                  <Sparkles className="w-5 h-5 text-amber-400 animate-spin" />
+                  <span className="text-xl">✨</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Speech Bubble */}
+          <div className="absolute -right-2 sm:right-4 top-4 sm:top-8 w-36 sm:w-44 z-20">
+            <LumiSpeechBubble />
+          </div>
+        </div>
+      </div>
+
+      {/* Activity Buttons */}
+      <div className="relative z-30 w-full px-4 sm:px-6 lg:px-10 pb-4 sm:pb-6">
+        {/* Row 1: 3 buttons */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-2xl mx-auto mb-3 sm:mb-4">
+          {activities.slice(0, 3).map((act) => (
+            <div key={act.id} className="h-24 sm:h-28 md:h-32">
+              <ActivityButton
+                icon={act.icon}
+                label={act.label}
+                color={act.color}
+                onPress={() => handleSelect(act.id, act.spoken)}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Row 2: 2 buttons centered */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-[27rem] sm:max-w-md mx-auto">
+          {activities.slice(3, 5).map((act) => (
+            <div key={act.id} className="h-24 sm:h-28 md:h-32">
+              <ActivityButton
+                icon={act.icon}
+                label={act.label}
+                color={act.color}
+                onPress={() => handleSelect(act.id, act.spoken)}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </ForestBackground>
   );
 };
