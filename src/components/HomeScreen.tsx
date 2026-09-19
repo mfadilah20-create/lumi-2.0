@@ -18,6 +18,22 @@ interface HomeScreenProps {
   onOpenSettings: () => void;
 }
 
+interface ActivityDefinition {
+  id: ActivityScreen;
+  icon: string;
+  label: string;
+  spoken: string;
+  color: 'amber' | 'purple' | 'emerald' | 'sky' | 'pink';
+}
+
+const activities: ActivityDefinition[] = [
+  { id: 'belajar-huruf', icon: '🔤', label: 'Belajar Huruf', spoken: 'Belajar Huruf', color: 'amber' },
+  { id: 'menulis', icon: '✏️', label: 'Menulis', spoken: 'Menulis Huruf', color: 'purple' },
+  { id: 'bermain', icon: '🎮', label: 'Bermain', spoken: 'Bermain Mini Game', color: 'emerald' },
+  { id: 'membaca', icon: '📖', label: 'Membaca', spoken: 'Membaca Kata', color: 'sky' },
+  { id: 'cerita', icon: '📚', label: 'Cerita', spoken: 'Mendengarkan Cerita', color: 'pink' },
+];
+
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   childProfile,
   childName,
@@ -27,32 +43,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [isMusicActive, setIsMusicActive] = useState(soundService.isMusicOn());
   const [lumiHeartEffect, setLumiHeartEffect] = useState(false);
   const [lumiState, setLumiState] = useState<'idle' | 'greeting' | 'happy'>('idle');
-  const [creatureToast, setCreatureToast] = useState<string | null>(null);
-
   const activeNickname = (childProfile?.nickname || childName || 'Izar').trim();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const greetingTimer = setTimeout(() => {
       soundService.speak(`Halo, ${activeNickname}! Yuk, pilih aktivitasnya!`);
       setLumiState('greeting');
       setTimeout(() => setLumiState('idle'), 3000);
     }, 600);
-    return () => clearTimeout(timer);
+    return () => clearTimeout(greetingTimer);
   }, [activeNickname]);
 
   const toggleMusic = (e: React.MouseEvent) => {
     e.stopPropagation();
     soundService.playPop();
-    const newState = soundService.toggleBgm();
-    setIsMusicActive(newState);
+    setIsMusicActive(soundService.toggleBgm());
   };
 
-  const handleSelect = (activity: ActivityScreen, spokenTitle: string) => {
+  const handleSelect = (activity: ActivityDefinition) => {
     soundService.playPop();
     soundService.playSparkle();
-    soundService.speak(`Ayo ${spokenTitle}!`);
+    soundService.speak(`Ayo ${activity.spoken}!`);
     setLumiState('happy');
-    setTimeout(() => onSelectActivity(activity), 280);
+    setTimeout(() => onSelectActivity(activity.id), 280);
   };
 
   const handleTapLumi = () => {
@@ -65,80 +78,40 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     }, 1600);
     const quotes = [
       `Halo ${activeNickname}! Aku Lumi, senang bisa belajar bersamamu!`,
-      `Yuk pilih salah satu tombol warna-warni di bawah!`,
-      `Kamu anak pintar dan hebat! Ayo kita mulai!`,
+      'Yuk pilih salah satu tombol warna-warni di bawah!',
+      'Kamu anak pintar dan hebat! Ayo kita mulai!',
     ];
-    const picked = quotes[Math.floor(Math.random() * quotes.length)];
-    soundService.speak(picked);
+    soundService.speak(quotes[Math.floor(Math.random() * quotes.length)]);
   };
-
-  const showToast = (message: string, sound: 'pop' | 'success' = 'pop') => {
-    if (sound === 'pop') soundService.playPop();
-    else soundService.playSuccess();
-    setCreatureToast(message);
-    setTimeout(() => setCreatureToast(null), 2000);
-  };
-
-  const activities: {
-    id: ActivityScreen;
-    icon: string;
-    label: string;
-    spoken: string;
-    color: 'amber' | 'purple' | 'emerald' | 'sky' | 'pink';
-  }[] = [
-    { id: 'belajar-huruf', icon: '🔤', label: 'Belajar Huruf', spoken: 'Belajar Huruf', color: 'amber' },
-    { id: 'menulis', icon: '✏️', label: 'Menulis', spoken: 'Menulis Huruf', color: 'purple' },
-    { id: 'bermain', icon: '🎮', label: 'Bermain', spoken: 'Bermain Mini Game', color: 'emerald' },
-    { id: 'membaca', icon: '📖', label: 'Membaca', spoken: 'Membaca Kata', color: 'sky' },
-    { id: 'cerita', icon: '📚', label: 'Cerita', spoken: 'Mendengarkan Cerita', color: 'pink' },
-  ];
 
   return (
     <ForestBackground>
-      {/* Toast / Feedback Popups */}
-      <AnimatePresence>
-        {creatureToast && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.9 }}
-            className="fixed top-6 z-50 bg-white/95 px-5 py-2.5 rounded-full shadow-[0_8px_24px_rgba(0,0,0,0.15)] border-2 border-amber-300 flex items-center gap-2 text-slate-800 font-bold text-sm sm:text-base pointer-events-none"
-          >
-            <Sparkles className="w-4 h-4 text-amber-500 animate-spin-slow" />
-            <span>{creatureToast}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Top Bar: Greeting (left), Audio + Settings (right) */}
-      <div className="relative z-30 flex items-start justify-between w-full px-3 sm:px-5 pt-3 sm:pt-5">
-        <ChildGreetingPill
-          childProfile={childProfile}
-          childName={activeNickname}
-        />
-
-        <div className="flex items-center gap-2 sm:gap-3">
-          <AudioButton
-            variant="circle"
-            isMuted={!isMusicActive}
-            onClick={toggleMusic}
-          />
-          <SettingsButton onOpen={onOpenSettings} />
+      <div className="relative z-30 flex h-full min-h-screen flex-col px-3 sm:px-6 lg:px-10">
+        <div className="flex items-start justify-between pt-4 sm:pt-6">
+          <ChildGreetingPill childProfile={childProfile} childName={activeNickname} />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <AudioButton variant="circle" isMuted={!isMusicActive} onClick={toggleMusic} />
+            <SettingsButton onOpen={onOpenSettings} />
+          </div>
         </div>
-      </div>
 
-      {/* LUMI Character + Speech Bubble (center area) */}
-      <div className="relative z-20 flex-1 flex flex-col items-center justify-center w-full px-4 pt-2 sm:pt-4">
-        <div className="relative flex items-start justify-center w-full max-w-md">
-          {/* Lumi Character */}
-          <div className="relative flex flex-col items-center">
-            <LumiCharacter
-              state={lumiState}
-              size="lg"
-              onClick={handleTapLumi}
-              showShadow={true}
-            />
-            {/* Tap hearts effect */}
+        <div className="pointer-events-none absolute left-1/2 top-4 hidden -translate-x-1/2 sm:block">
+          <div className="relative w-[min(52vw,590px)] rounded-[2rem] border-[5px] border-[#7b3f1c] bg-gradient-to-b from-[#bd7138] via-[#9f5428] to-[#7d3b1c] px-8 py-3 text-center shadow-[0_8px_0_rgba(67,30,13,0.45),0_14px_28px_rgba(39,28,12,0.25)]">
+            <div className="absolute -top-8 left-[10%] h-10 w-3 rounded-full bg-[#d59a5d] shadow-[0_0_0_2px_#75401f]" />
+            <div className="absolute -top-8 right-[10%] h-10 w-3 rounded-full bg-[#d59a5d] shadow-[0_0_0_2px_#75401f]" />
+            <div className="font-black tracking-wide text-white [text-shadow:0_3px_0_#6b3218]">
+              <span className="text-4xl text-rose-300 sm:text-5xl">L</span>
+              <span className="text-4xl text-amber-300 sm:text-5xl">U</span>
+              <span className="text-4xl text-sky-300 sm:text-5xl">M</span>
+              <span className="text-4xl text-emerald-300 sm:text-5xl">i</span>
+            </div>
+            <div className="mt-1 text-xs font-extrabold text-[#fff4d6] sm:text-sm">Teman kecil untuk tumbuh dan belajar</div>
+          </div>
+        </div>
+
+        <div className="relative flex min-h-0 flex-1 items-center justify-center pb-3 pt-12 sm:pb-5 sm:pt-20">
+          <div className="relative w-[min(58vw,420px)] max-w-[420px] sm:w-[min(34vw,360px)]">
+            <LumiCharacter state={lumiState} size="xl" onClick={handleTapLumi} showShadow />
             <AnimatePresence>
               {lumiHeartEffect && (
                 <motion.div
@@ -146,51 +119,35 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   animate={{ scale: [0, 1.25, 1], opacity: 1, y: -28 }}
                   exit={{ scale: 1.3, opacity: 0, y: -45 }}
                   transition={{ duration: 0.6 }}
-                  className="absolute -top-4 left-1/2 -translate-x-1/2 flex items-center gap-1 text-2xl font-black drop-shadow-md pointer-events-none z-40"
+                  className="pointer-events-none absolute -top-2 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 text-2xl font-black drop-shadow-md"
                 >
                   <span className="animate-bounce">❤️</span>
-                  <Sparkles className="w-5 h-5 text-amber-400 animate-spin" />
-                  <span className="text-xl">✨</span>
+                  <Sparkles className="h-5 w-5 text-amber-400" />
+                  <span>✨</span>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
-
-          {/* Speech Bubble */}
-          <div className="absolute -right-2 sm:right-4 top-4 sm:top-8 w-36 sm:w-44 z-20">
-            <LumiSpeechBubble />
+            <div className="pointer-events-auto absolute -right-[min(20vw,150px)] top-[20%] w-[min(40vw,230px)] sm:-right-[min(18vw,190px)] sm:top-[14%]">
+              <LumiSpeechBubble />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Activity Buttons */}
-      <div className="relative z-30 w-full px-4 sm:px-6 lg:px-10 pb-4 sm:pb-6">
-        {/* Row 1: 3 buttons */}
-        <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-2xl mx-auto mb-3 sm:mb-4">
-          {activities.slice(0, 3).map((act) => (
-            <div key={act.id} className="h-24 sm:h-28 md:h-32">
-              <ActivityButton
-                icon={act.icon}
-                label={act.label}
-                color={act.color}
-                onPress={() => handleSelect(act.id, act.spoken)}
-              />
-            </div>
-          ))}
-        </div>
-
-        {/* Row 2: 2 buttons centered */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-[27rem] sm:max-w-md mx-auto">
-          {activities.slice(3, 5).map((act) => (
-            <div key={act.id} className="h-24 sm:h-28 md:h-32">
-              <ActivityButton
-                icon={act.icon}
-                label={act.label}
-                color={act.color}
-                onPress={() => handleSelect(act.id, act.spoken)}
-              />
-            </div>
-          ))}
+        <div className="w-full pb-4 sm:pb-7">
+          <div className="mx-auto grid max-w-6xl grid-cols-3 gap-2.5 sm:gap-4">
+            {activities.slice(0, 3).map((activity) => (
+              <div key={activity.id} className="h-24 sm:h-32 lg:h-36">
+                <ActivityButton {...activity} onPress={() => handleSelect(activity)} />
+              </div>
+            ))}
+          </div>
+          <div className="mx-auto mt-3 grid max-w-2xl grid-cols-2 gap-2.5 sm:mt-4 sm:gap-4">
+            {activities.slice(3).map((activity) => (
+              <div key={activity.id} className="h-24 sm:h-32 lg:h-36">
+                <ActivityButton {...activity} onPress={() => handleSelect(activity)} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </ForestBackground>

@@ -192,7 +192,7 @@ export const ForestBackground: React.FC<ForestBackgroundProps> = ({
           </g>
 
           {/* MIDGROUND RIGHT: Layered Waterfall & Rocky River */}
-          <g id="waterfall-stream">
+          <g id="waterfall-stream" transform="translate(-900 0)">
             {/* Cliff rocks */}
             <path
               d="M1170 360 Q1230 340 1280 360 L1320 530 Q1260 560 1180 520 Z"
@@ -266,6 +266,14 @@ export const ForestBackground: React.FC<ForestBackgroundProps> = ({
               d="M120 350 C170 330 240 310 280 315 C260 335 200 355 135 375 Z"
               fill="#854D0E"
             />
+          </g>
+
+          {/* FOREGROUND RIGHT: Storybook Treehouse Trunk */}
+          <g id="treehouse-trunk-right">
+            <path d="M1270 920 C1260 760 1280 570 1335 390 C1380 250 1460 150 1510 120 L1510 920 Z" fill="url(#treeBark)" />
+            <path d="M1360 390 Q1400 500 1375 730" stroke="#582900" strokeWidth="8" strokeLinecap="round" opacity="0.45" fill="none" />
+            <path d="M1450 270 Q1410 390 1430 570" stroke="#582900" strokeWidth="7" strokeLinecap="round" opacity="0.4" fill="none" />
+            <path d="M1310 390 C1200 310 1130 300 1060 330 C1145 340 1220 380 1300 430 Z" fill="#854D0E" />
           </g>
 
           {/* FOREGROUND RIGHT: Wooden Post Fence */}
@@ -353,7 +361,7 @@ export const ForestBackground: React.FC<ForestBackgroundProps> = ({
       <div className="absolute inset-0 pointer-events-none z-10">
         {/* 1. COZY TREEHOUSE DOOR WITH ROUND WINDOW (Left Trunk) */}
         <motion.div
-          className="absolute left-2 sm:left-6 bottom-28 sm:bottom-36 pointer-events-auto cursor-pointer z-10"
+          className="absolute right-2 sm:right-10 bottom-28 sm:bottom-36 pointer-events-auto cursor-pointer z-10"
           animate={doorKnock ? { scale: [1, 0.95, 1.05, 1] } : {}}
           transition={{ duration: 0.5 }}
           onClick={handleDoor}
@@ -390,7 +398,7 @@ export const ForestBackground: React.FC<ForestBackgroundProps> = ({
 
         {/* 2. GLOWING LANTERN HANGING FROM TREE (Left) */}
         <motion.div
-          className="absolute left-20 sm:left-32 top-36 sm:top-48 pointer-events-auto cursor-pointer z-10"
+          className="absolute right-20 sm:right-32 top-36 sm:top-48 pointer-events-auto cursor-pointer z-10"
           animate={{ rotate: [-3, 3, -3] }}
           transition={{ repeat: Infinity, duration: 3.5, ease: 'easeInOut' }}
           onClick={() => soundService.playSparkle()}
@@ -414,7 +422,7 @@ export const ForestBackground: React.FC<ForestBackgroundProps> = ({
 
         {/* 3. CUTE SQUIRREL ON BRANCH (Left, above lantern) */}
         <motion.div
-          className="absolute left-10 sm:left-24 top-20 sm:top-28 pointer-events-auto cursor-pointer z-20"
+          className="absolute right-10 sm:right-24 top-20 sm:top-28 pointer-events-auto cursor-pointer z-20"
           animate={squirrelTwitch ? { rotate: [0, -10, 10, 0], scale: [1, 1.15, 1] } : { y: [0, -2, 0] }}
           transition={squirrelTwitch ? { duration: 0.6 } : { repeat: Infinity, duration: 2.8, ease: 'easeInOut' }}
           onClick={handleSquirrel}
@@ -519,7 +527,7 @@ export const ForestBackground: React.FC<ForestBackgroundProps> = ({
 
         {/* 6. SINGING BLUEBIRD ON TREE BRANCH (Top Right) */}
         <motion.div
-          className="absolute right-6 sm:right-16 top-16 sm:top-24 pointer-events-auto cursor-pointer z-20"
+          className="absolute left-6 sm:left-16 top-16 sm:top-24 pointer-events-auto cursor-pointer z-20"
           animate={birdSing ? { y: [-8, 0], scale: [1, 1.2, 1] } : { y: [0, -3, 0] }}
           transition={birdSing ? { duration: 0.5 } : { repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
           onClick={handleBird}
